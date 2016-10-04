@@ -1,0 +1,6 @@
+[submodule "jsonxx"]
+	path = dependencies/jsonxx
+	url = https://github.com/hjiang/jsonxx.git
+[submodule "rotaryencoder"]
+	path = dependencies/rotaryencoder
+	url = https://github.com/astine/rotaryencoder.git
