@@ -1,6 +1,6 @@
-#include "genexport.h"
+#include "gen_export.h"
 
-namespace genexport {
+namespace gen_export {
 
 /*******************************************************************************************************************
 Cycling '74 License for Max-Generated Code for Export
@@ -60,7 +60,7 @@ typedef struct State {
 		m_y_9 = 0;
 		m_mf_10 = 0;
 		genlib_reset_complete(this);
-		
+
 	};
 	// the signal processing routine;
 	inline int perform(t_sample ** __ins, t_sample ** __outs, int __n) {
@@ -70,11 +70,11 @@ typedef struct State {
 		t_sample * __out2 = __outs[1];
 		if (__exception) {
 			return __exception;
-			
+
 		} else if (( (__in1 == 0) || (__out1 == 0) || (__out2 == 0) )) {
 			__exception = GENLIB_ERR_NULL_BUFFER;
 			return __exception;
-			
+
 		};
 		t_sample mtof_1 = mtof(m_freq_1, 440);
 		t_sample max_3 = (samplerate * 0.25);
@@ -89,10 +89,10 @@ typedef struct State {
 			// assign results to output buffer;
 			(*(__out1++)) = out1;
 			(*(__out2++)) = out2;
-			
+
 		};
 		return __exception;
-		
+
 	};
 	inline void set_freq(t_param _value) {
 		m_freq_1 = (_value < 32 ? 32 : (_value > 96 ? 96 : _value));
@@ -118,9 +118,9 @@ typedef struct State {
 		m_mf_10 = ((m_y_9 + m_z_8) * 0.5);
 		m_z_8 = m_y_9;
 		return m_mf_10;
-		
+
 	};
-	
+
 } State;
 
 
@@ -163,7 +163,7 @@ void setparameter(CommonState *cself, long index, t_param value, void *ref) {
 	switch (index) {
 		case 0: self->set_freq(value); break;
 		case 1: self->set_q(value); break;
-		
+
 		default: break;
 	}
 }
@@ -175,7 +175,7 @@ void getparameter(CommonState *cself, long index, t_param *value) {
 	switch (index) {
 		case 0: *value = self->m_freq_1; break;
 		case 1: *value = self->m_q_2; break;
-		
+
 		default: break;
 	}
 }
@@ -285,7 +285,7 @@ void *create(t_param sr, long vs) {
 	pi->outputmax = 1;
 	pi->exp = 0;
 	pi->units = "";		// no units defined
-	
+
 	return self;
 }
 
@@ -294,9 +294,9 @@ void *create(t_param sr, long vs) {
 void destroy(CommonState *cself) {
 	State *self = (State *)cself;
 	genlib_sysmem_freeptr(cself->params);
-		
+
 	delete self;
 }
 
 
-} // genexport::
+} // gen_export::

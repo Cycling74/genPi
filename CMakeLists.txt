@@ -100,7 +100,7 @@ add_executable(	${PROJECT_NAME}
 				include/HardwareEncoder.h
 				src/main.cpp
 				src/Object.cpp
-				src/genexport.cpp
+				src/gen_export.cpp
 				dependencies/gen/genlib.cpp
 				dependencies/gen/json.c
 				dependencies/gen/json_builder.c
