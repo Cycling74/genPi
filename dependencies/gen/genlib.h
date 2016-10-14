@@ -112,10 +112,11 @@ extern "C" {
 	extern double floor(double);
 	extern double trunc(double);
 	extern double round(double);
-	extern int abs(int);
 
 	extern char *strcpy(char *, const char *);
 #endif // MSP_ON_CLANG
+
+	extern int abs(int);
 
 #if defined(GENLIB_USE_ARMMATH) // ARM embedded support
 #	include "arm_math.h"
@@ -131,6 +132,7 @@ extern "C" {
 #endif // GENLIB_USE_ARMMATH
 
 #if defined(GENLIB_USE_FASTMATH)
+#	include "math.h"
 #	define tan(x)		fastertanfull(x)
 #	define exp(x)		fasterexp(x)
 #	define log2(x)		fasterlog2(x)
