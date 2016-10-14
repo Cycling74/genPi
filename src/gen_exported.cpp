@@ -37,26 +37,26 @@ typedef struct State {
 	SineData __sinedata;
 	int __exception;
 	int vectorsize;
-	t_sample __m_carry_7;
-	t_sample m_velocity_1;
-	t_sample __m_slide_9;
+	t_sample __m_count_8;
+	t_sample m_frequency_1;
+	t_sample __m_carry_10;
 	t_sample samplerate;
-	t_sample __m_count_5;
-	t_sample m_frequency_2;
-	t_sample m_formant_4;
+	t_sample __m_slide_5;
+	t_sample m_formant_2;
+	t_sample m_velocity_4;
 	t_sample m_period_3;
 	// re-initialize all member variables;
 	inline void reset(t_param __sr, int __vs) {
 		__exception = 0;
 		vectorsize = __vs;
 		samplerate = __sr;
-		m_velocity_1 = 0;
-		m_frequency_2 = 440;
+		m_frequency_1 = 440;
+		m_formant_2 = 2;
 		m_period_3 = 4410;
-		m_formant_4 = 2;
-		__m_count_5 = 0;
-		__m_carry_7 = 0;
-		__m_slide_9 = 0;
+		m_velocity_4 = 0;
+		__m_slide_5 = 0;
+		__m_count_8 = 0;
+		__m_carry_10 = 0;
 		__m_cycle_12.reset(samplerate, 0);
 		genlib_reset_complete(this);
 		
@@ -66,66 +66,69 @@ typedef struct State {
 		vectorsize = __n;
 		const t_sample * __in1 = __ins[0];
 		t_sample * __out1 = __outs[0];
+		t_sample * __out2 = __outs[1];
 		if (__exception) {
 			return __exception;
 			
-		} else if (( (__in1 == 0) || (__out1 == 0) )) {
+		} else if (( (__in1 == 0) || (__out1 == 0) || (__out2 == 0) )) {
 			__exception = GENLIB_ERR_NULL_BUFFER;
 			return __exception;
 			
 		};
-		t_sample rdiv_626 = safediv(1, m_period_3);
-		t_sample iup_10 = (1 / maximum(1, abs(100)));
-		t_sample idown_11 = (1 / maximum(1, abs(10000)));
+		t_sample iup_6 = (1 / maximum(1, abs(100)));
+		t_sample idown_7 = (1 / maximum(1, abs(10000)));
+		t_sample rdiv_679 = safediv(1, m_period_3);
 		// the main sample loop;
 		while ((__n--)) {
 			const t_sample in1 = (*(__in1++));
-			__m_count_5 = (0 ? 0 : (fixdenorm(__m_count_5 + rdiv_626)));
-			int carry_6 = 0;
+			__m_slide_5 = fixdenorm((__m_slide_5 + (((m_velocity_4 > __m_slide_5) ? iup_6 : idown_7) * (m_velocity_4 - __m_slide_5))));
+			t_sample slide_671 = __m_slide_5;
+			__m_count_8 = (0 ? 0 : (fixdenorm(__m_count_8 + rdiv_679)));
+			int carry_9 = 0;
 			if ((0 != 0)) {
-				__m_count_5 = 0;
-				__m_carry_7 = 0;
+				__m_count_8 = 0;
+				__m_carry_10 = 0;
 				
-			} else if (((1 > 0) && (__m_count_5 >= 1))) {
-				int wraps_8 = (__m_count_5 / 1);
-				__m_carry_7 = (__m_carry_7 + wraps_8);
-				__m_count_5 = (__m_count_5 - (wraps_8 * 1));
-				carry_6 = 1;
+			} else if (((1 > 0) && (__m_count_8 >= 1))) {
+				int wraps_11 = (__m_count_8 / 1);
+				__m_carry_10 = (__m_carry_10 + wraps_11);
+				__m_count_8 = (__m_count_8 - (wraps_11 * 1));
+				carry_9 = 1;
 				
 			};
-			t_sample counter_622 = __m_count_5;
-			int counter_623 = carry_6;
-			int counter_624 = __m_carry_7;
-			t_sample s = (counter_622 * m_formant_4);
+			t_sample counter_675 = __m_count_8;
+			int counter_676 = carry_9;
+			int counter_677 = __m_carry_10;
+			t_sample s = (counter_675 * m_formant_2);
 			t_sample clipped = ((s <= 0) ? 0 : ((s >= 1) ? 1 : s));
 			t_sample scaled = ((clipped * 3.1415926535898) * 2);
-			t_sample expr_670 = ((1 - cos(scaled)) * 0.5);
-			__m_slide_9 = fixdenorm((__m_slide_9 + (((m_velocity_1 > __m_slide_9) ? iup_10 : idown_11) * (m_velocity_1 - __m_slide_9))));
-			t_sample slide_659 = __m_slide_9;
-			__m_cycle_12.freq(m_frequency_2);
-			t_sample cycle_629 = __m_cycle_12(__sinedata);
-			t_sample cycleindex_630 = __m_cycle_12.phase();
-			t_sample mul_627 = (expr_670 * cycle_629);
-			t_sample mul_638 = (mul_627 * slide_659);
-			t_sample out1 = mul_638;
+			t_sample expr_684 = ((1 - cos(scaled)) * 0.5);
+			__m_cycle_12.freq(m_frequency_1);
+			t_sample cycle_673 = __m_cycle_12(__sinedata);
+			t_sample cycleindex_674 = __m_cycle_12.phase();
+			t_sample mul_680 = (expr_684 * cycle_673);
+			t_sample mul_672 = (mul_680 * slide_671);
+			t_sample out2 = mul_672;
+			t_sample out1 = mul_672;
 			// assign results to output buffer;
 			(*(__out1++)) = out1;
+			(*(__out2++)) = out2;
 			
 		};
 		return __exception;
 		
 	};
-	inline void set_velocity(t_param _value) {
-		m_velocity_1 = (_value < 0 ? 0 : (_value > 1 ? 1 : _value));
-	};
 	inline void set_frequency(t_param _value) {
-		m_frequency_2 = (_value < 1 ? 1 : (_value > 10000 ? 10000 : _value));
+		m_frequency_1 = (_value < 1 ? 1 : (_value > 10000 ? 10000 : _value));
+	};
+	inline void set_formant(t_param _value) {
+		m_formant_2 = (_value < 1 ? 1 : (_value > 255 ? 255 : _value));
 	};
 	inline void set_period(t_param _value) {
 		m_period_3 = (_value < 1 ? 1 : (_value > 10000 ? 10000 : _value));
 	};
-	inline void set_formant(t_param _value) {
-		m_formant_4 = (_value < 1 ? 1 : (_value > 255 ? 255 : _value));
+	inline void set_velocity(t_param _value) {
+		m_velocity_4 = (_value < 0 ? 0 : (_value > 1 ? 1 : _value));
 	};
 	
 } State;
@@ -138,7 +141,7 @@ typedef struct State {
 /// Number of signal inputs and outputs
 
 int gen_kernel_numins = 1;
-int gen_kernel_numouts = 1;
+int gen_kernel_numouts = 2;
 
 int num_inputs() { return gen_kernel_numins; }
 int num_outputs() { return gen_kernel_numouts; }
@@ -147,7 +150,7 @@ int num_params() { return 4; }
 /// Assistive lables for the signal inputs and outputs
 
 const char *gen_kernel_innames[] = { "in1" };
-const char *gen_kernel_outnames[] = { "out1" };
+const char *gen_kernel_outnames[] = { "out1", "out2" };
 
 /// Invoke the signal process of a State object
 
@@ -182,10 +185,10 @@ void setparameter(CommonState *cself, long index, t_param value, void *ref) {
 void getparameter(CommonState *cself, long index, t_param *value) {
 	State *self = (State *)cself;
 	switch (index) {
-		case 0: *value = self->m_formant_4; break;
-		case 1: *value = self->m_frequency_2; break;
+		case 0: *value = self->m_formant_2; break;
+		case 1: *value = self->m_frequency_1; break;
 		case 2: *value = self->m_period_3; break;
-		case 3: *value = self->m_velocity_1; break;
+		case 3: *value = self->m_velocity_4; break;
 		
 		default: break;
 	}
@@ -268,11 +271,11 @@ void *create(t_param sr, long vs) {
 	self->__commonstate.vs = vs;
 	self->__commonstate.params = (ParamInfo *)genlib_sysmem_newptr(4 * sizeof(ParamInfo));
 	self->__commonstate.numparams = 4;
-	// initialize parameter 0 ("m_formant_4")
+	// initialize parameter 0 ("m_formant_2")
 	pi = self->__commonstate.params + 0;
 	pi->name = "formant";
 	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
-	pi->defaultvalue = self->m_formant_4;
+	pi->defaultvalue = self->m_formant_2;
 	pi->defaultref = 0;
 	pi->hasinputminmax = false;
 	pi->inputmin = 0;
@@ -282,11 +285,11 @@ void *create(t_param sr, long vs) {
 	pi->outputmax = 255;
 	pi->exp = 0;
 	pi->units = "";		// no units defined
-	// initialize parameter 1 ("m_frequency_2")
+	// initialize parameter 1 ("m_frequency_1")
 	pi = self->__commonstate.params + 1;
 	pi->name = "frequency";
 	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
-	pi->defaultvalue = self->m_frequency_2;
+	pi->defaultvalue = self->m_frequency_1;
 	pi->defaultref = 0;
 	pi->hasinputminmax = false;
 	pi->inputmin = 0;
@@ -310,11 +313,11 @@ void *create(t_param sr, long vs) {
 	pi->outputmax = 10000;
 	pi->exp = 0;
 	pi->units = "";		// no units defined
-	// initialize parameter 3 ("m_velocity_1")
+	// initialize parameter 3 ("m_velocity_4")
 	pi = self->__commonstate.params + 3;
 	pi->name = "velocity";
 	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
-	pi->defaultvalue = self->m_velocity_1;
+	pi->defaultvalue = self->m_velocity_4;
 	pi->defaultref = 0;
 	pi->hasinputminmax = false;
 	pi->inputmin = 0;
