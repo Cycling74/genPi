@@ -68,23 +68,27 @@ namespace GenPi {
                 << "[0] Modify Parameter\n"
 				<< "[1] Configure Audio Input\n"
 				<< "[2] Configure Audio Output\n"
-            /*
+#ifdef ENABLE_MIDI
 				<< "[3] Configure Midi Input\n"
 				<< "[4] Configure Midi Output\n"
-             */
+#endif // ENABLE_MIDI
 				<< "[q] Quit" << std::endl;
 
+#ifdef ENABLE_MIDI
+			std::cout << "\n[0 - 4, q]: ";
+#else
 			std::cout << "\n[0 - 2, q]: ";
+#endif
 			int config = getchar();
 
 			switch(config) {
                 case '0': modifyParameter(); break;
 				case '1': configureAudioInput(); break;
 				case '2': configureAudioOutput(); break;
-                /*
+#ifdef ENABLE_MIDI
 				case '3': configureMidiInput(); break;
 				case '4': configureMidiOutput(); break;
-                */
+#endif
 				case 'q': shutdown(); rv = 1; break;
 				case -1: rv = -1; break;
 				default: break;
@@ -156,7 +160,7 @@ namespace GenPi {
 			return -1;
 		}
 
-        /*
+#ifdef ENABLE_MIDI
 		void configureMidiInput() {
 			std::vector<std::string> ports = m_host.getMidiInPorts();
 			if (ports.size()) {
@@ -206,7 +210,7 @@ namespace GenPi {
 			}
 			return -1;
 		}
-        */
+#endif // ENABLE_MIDI
 
         void modifyParameter() {
 			std::vector<std::string> params = m_host.getParameters();
@@ -280,7 +284,8 @@ namespace GenPi {
 					}
 				}
 			}
-            /*
+
+#ifdef ENABLE_MIDI
 			if (!m_settings.get("MidiInput", value)) {
 				std::vector<std::string> ports = m_host.getMidiInPorts();
 				for (int i = 0, size = ports.size(); i < size; i++) {
@@ -301,7 +306,7 @@ namespace GenPi {
 					}
 				}
 			}
-            */
+#endif // ENABLE_MIDI
 		}
 
 		void shutdownSettings() {

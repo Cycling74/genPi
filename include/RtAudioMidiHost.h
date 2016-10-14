@@ -37,10 +37,14 @@ namespace GenPi {
 	class RtAudioMidiHost : public AudioMidiHost {
 
 	public:
-		// TODO separate class creation/setup/run/shutdown into separate operations
-		RtAudioMidiHost() :
-		m_audio(nullptr),
-		m_ip(nullptr), m_op(nullptr) {
+
+		RtAudioMidiHost()
+		: m_audio(nullptr)
+		, m_midiin(nullptr)
+		, m_midiout(nullptr)
+		, m_ip(nullptr)
+		, m_op(nullptr)
+		{
 			if (init()) {
 				if (m_audio) {
 					m_info.audioInDevice = m_audio->getDefaultInputDevice();
@@ -49,7 +53,6 @@ namespace GenPi {
 			}
 		}
 
-		// can we add these to the base class somehow?
 		RtAudioMidiHost(RtAudioMidiHost const &) = delete;
 		void operator=(RtAudioMidiHost const &) = delete;
 
@@ -102,6 +105,16 @@ namespace GenPi {
 		}
 
 		virtual int setup() {
+			if (m_midiin) {
+				try {
+					m_midiin->openPort(m_info.midiInPort);
+					m_midiout->openPort(m_info.midiOutPort);
+				}
+				catch (RtMidiError &e) {
+					e.printMessage();
+				}
+			}
+
 			RtAudio::StreamParameters iParams;
 			iParams.deviceId = m_info.audioInDevice;
 			iParams.nChannels = m_info.numChannels;
@@ -184,6 +197,37 @@ namespace GenPi {
 				m_audio = nullptr;
 			}
 
+			if (m_midiin) {
+#if 0
+				if (m_midiin->isPortOpen()) {
+					m_midiin->closePort();
+				}
+#endif
+				try {
+					m_midiin->closePort(); // old API doesn't include isPortOpen()
+				}
+				catch(RtMidiError &e) {
+					;
+				}
+				delete m_midiin;
+				m_midiin = nullptr;
+			}
+			if (m_midiout) {
+#if 0
+				if (m_midiout->isPortOpen()) {
+					m_midiout->closePort();
+				}
+#endif
+				try {
+					m_midiout->closePort(); // old API doesn't include isPortOpen()
+				}
+				catch(RtMidiError &e) {
+					;
+				}
+				delete m_midiout;
+				m_midiout = nullptr;
+			}
+
 			if (m_ip) {
 				delete[] m_ip;
 				m_ip = nullptr;
@@ -211,22 +255,58 @@ namespace GenPi {
 
 		virtual std::string getName() const { return "RtAudio"; }
 
-		virtual std::vector<std::string> getMidiInPorts() const { std::vector<std::string> ports; return ports; }
-		virtual int setMidiInPort(int port) { return -1; }
+		virtual std::vector<std::string> getMidiInPorts() const {
+			std::vector<std::string> ports;
+			if (m_midiin) {
+				int ct = m_midiin->getPortCount();
+				for (int i = 0; i < ct; i++) {
+					ports.push_back(m_midiin->getPortName(i));
+				}
+			}
+			return ports;
+		}
 
-		virtual std::vector<std::string> getMidiOutPorts() const { std::vector<std::string> ports; return ports; }
-		virtual int setMidiOutPort(int port) { return -1; }
+		virtual int setMidiInPort(int port) {
+			if (m_midiin && port >= 0 && port < m_midiin->getPortCount()) {
+				m_info.midiInPort = port;
+				return 0;
+			}
+			return -1;
+		}
+
+		virtual std::vector<std::string> getMidiOutPorts() const {
+			std::vector<std::string> ports;
+			if (m_midiout) {
+				int ct = m_midiout->getPortCount();
+				for (int i = 0; i < ct; i++) {
+					ports.push_back(m_midiout->getPortName(i));
+				}
+			}
+			return ports;
+		}
+
+		virtual int setMidiOutPort(int port) {
+			if (m_midiout && port >= 0 && port < m_midiout->getPortCount()) {
+				m_info.midiOutPort = port;
+				return 0;
+			}
+			return -1;
+		}
 
 	private:
 		struct RtAudioMidiInfo {
 			int audioInDevice;
 			int audioOutDevice;
+			int midiInPort;
+			int midiOutPort;
 			int numChannels;
 			bool audioInterleaved;
 
 			RtAudioMidiInfo() :
 			audioInDevice(0),
 			audioOutDevice(0),
+			midiInPort(0),
+			midiOutPort(0),
 			numChannels(2),
 			audioInterleaved(false) {}
 		};
@@ -238,6 +318,8 @@ namespace GenPi {
 				 void *userData)
 		{
 			RtAudioMidiHost* rth = (RtAudioMidiHost *)userData;
+
+			rth->getPendingMidi(rth);
 
 			t_sample* ip[rth->m_info.numChannels];
 			t_sample* op[rth->m_info.numChannels];
@@ -272,7 +354,74 @@ namespace GenPi {
 				}
 			}
 
+			rth->processMidiOutput();
+
 			return 0; // keep going
+		}
+
+		int getParameterIndexForName(const char* name) {
+			int numParams = getGenObject().getNumParameters();
+			for (int i = 0; i < numParams; i++) {
+				const char* pName = getGenObject().getParameterName(i);
+				if (!strcmp(pName, name)) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		void getPendingMidi(RtAudioMidiHost* rth) {
+			int freqIndex = getParameterIndexForName("frequency");
+			int veloIndex = getParameterIndexForName("velocity");
+
+			if (m_midiin && freqIndex > 0) {
+				while (1) {
+					std::vector<unsigned char> message;
+					double timeStamp = 0;
+
+					try {
+						timeStamp = m_midiin->getMessage(&message);
+					}
+					catch(RtMidiError &e) {
+						return;
+					}
+					if (int bytes = message.size()) {
+						// TODO: find out the current time?
+
+						// example
+						if (bytes == 3 && message[0] & 0x80) { // note on or off
+							int midiNote = message[1] & 0x7F;
+							int midiVelo = message[2] & 0x7F;
+
+							if (!(message[0] & 0x10)) { // note off
+								midiVelo = 0;
+							}
+
+							t_param freq = 440. * (exp(0.057762265 * ((t_param)midiNote - 69.))); // convert to Hz
+							t_param velo = ((t_param)midiVelo / 127.); // 0.-1.
+							getGenObject().setParameterValue(freqIndex, freq);
+							if (veloIndex > -1) {
+								getGenObject().setParameterValue(veloIndex, velo);
+							}
+						}
+#if 0
+						std::cout << "Got MIDI Input:" << std::endl;
+						for (int i = 0; i < bytes; i++) {
+							std::cout << "byte " << i << ": " << (int)message[i] << std::endl;
+						}
+#endif
+					}
+					else break;
+				}
+			}
+		}
+
+		void processMidiOutput() {
+			// there's no way to generate outgoing MIDI in Gen
+			// but here's where you'd send MIDI out from the perform loop
+			if (m_midiout) {
+
+			}
 		}
 
 		bool init() {
@@ -285,6 +434,10 @@ namespace GenPi {
 				return false;
 			}
 
+#if ENABLE_MIDI
+			initMidiIn();
+			initMidiOut();
+#endif
 			return true;
 		}
 
@@ -300,6 +453,41 @@ namespace GenPi {
 				std::cout << "\nNo audio devices found!" << std::endl;;
 				delete m_audio;
 				m_audio = nullptr;
+				return false;
+			}
+			return true;
+		}
+
+		bool initMidiIn() {
+			try {
+				m_midiin = new RtMidiIn();
+			}
+			catch(RtMidiError &e) {
+				std::cout << "\nCould not create RtMidi Input!\n" << e.getMessage() << std::endl;
+				return false;
+			}
+			if (m_midiin->getPortCount() < 1) {
+				std::cout << "\nNo MIDI input ports found!" << std::endl;
+				delete m_midiin;
+				m_midiin = nullptr;
+				return false;
+			}
+			m_midiin->ignoreTypes(true, true, true); /* sysex, timing, active sensing */
+			return true;
+		}
+
+		bool initMidiOut() {
+			try {
+				m_midiout = new RtMidiOut();
+			}
+			catch(RtMidiError &e) {
+				std::cout << "\nCould not create RtMidi Output!\n" << e.getMessage() << std::endl;
+				return false;
+			}
+			if (m_midiout->getPortCount() < 1) {
+				std::cout << "\nNo MIDI output ports found!" << std::endl;
+				delete m_midiout;
+				m_midiout = nullptr;
 				return false;
 			}
 			return true;
@@ -330,6 +518,8 @@ namespace GenPi {
 		}
 
 		RtAudio*        m_audio; // pointers due to possible throw in constructor
+		RtMidiIn*		m_midiin;
+		RtMidiOut*		m_midiout;
 		Processor       m_processor;
 		t_sample*       m_ip;
 		t_sample*       m_op;

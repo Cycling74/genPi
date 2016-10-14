@@ -33,94 +33,101 @@ static const int GENLIB_LOOPCOUNT_BAIL = 100000;
 // The State struct contains all the state and procedures for the gendsp kernel
 typedef struct State {
 	CommonState __commonstate;
+	SineCycle __m_cycle_12;
+	SineData __sinedata;
 	int __exception;
 	int vectorsize;
-	t_sample m_z_7;
-	t_sample m_z_8;
-	t_sample m_z_6;
-	t_sample m_z_5;
-	t_sample m_z_4;
-	t_sample m_q_2;
-	t_sample m_y_9;
+	t_sample __m_carry_7;
+	t_sample m_velocity_1;
+	t_sample __m_slide_9;
 	t_sample samplerate;
-	t_sample m_freq_1;
-	t_sample m_mf_10;
+	t_sample __m_count_5;
+	t_sample m_frequency_2;
+	t_sample m_formant_4;
+	t_sample m_period_3;
 	// re-initialize all member variables;
 	inline void reset(t_param __sr, int __vs) {
 		__exception = 0;
 		vectorsize = __vs;
 		samplerate = __sr;
-		m_freq_1 = 48;
-		m_q_2 = 0.1;
-		m_z_4 = 0;
-		m_z_5 = 0;
-		m_z_6 = 0;
-		m_z_7 = 0;
-		m_z_8 = 0;
-		m_y_9 = 0;
-		m_mf_10 = 0;
+		m_velocity_1 = 0;
+		m_frequency_2 = 440;
+		m_period_3 = 4410;
+		m_formant_4 = 2;
+		__m_count_5 = 0;
+		__m_carry_7 = 0;
+		__m_slide_9 = 0;
+		__m_cycle_12.reset(samplerate, 0);
 		genlib_reset_complete(this);
-
+		
 	};
 	// the signal processing routine;
 	inline int perform(t_sample ** __ins, t_sample ** __outs, int __n) {
 		vectorsize = __n;
 		const t_sample * __in1 = __ins[0];
 		t_sample * __out1 = __outs[0];
-		t_sample * __out2 = __outs[1];
 		if (__exception) {
 			return __exception;
-
-		} else if (( (__in1 == 0) || (__out1 == 0) || (__out2 == 0) )) {
+			
+		} else if (( (__in1 == 0) || (__out1 == 0) )) {
 			__exception = GENLIB_ERR_NULL_BUFFER;
 			return __exception;
-
+			
 		};
-		t_sample mtof_1 = mtof(m_freq_1, 440);
-		t_sample max_3 = (samplerate * 0.25);
-		t_sample cf = ((mtof_1 <= 20) ? 20 : ((mtof_1 >= max_3) ? max_3 : mtof_1));
-		t_sample res = ((m_q_2 <= 0) ? 0 : ((m_q_2 >= 1) ? 1 : m_q_2));
+		t_sample rdiv_626 = safediv(1, m_period_3);
+		t_sample iup_10 = (1 / maximum(1, abs(100)));
+		t_sample idown_11 = (1 / maximum(1, abs(10000)));
 		// the main sample loop;
 		while ((__n--)) {
 			const t_sample in1 = (*(__in1++));
-			t_sample expr_3 = moogLadder_d_d_d(in1, cf, res);
-			t_sample out2 = expr_3;
-			t_sample out1 = expr_3;
+			__m_count_5 = (0 ? 0 : (fixdenorm(__m_count_5 + rdiv_626)));
+			int carry_6 = 0;
+			if ((0 != 0)) {
+				__m_count_5 = 0;
+				__m_carry_7 = 0;
+				
+			} else if (((1 > 0) && (__m_count_5 >= 1))) {
+				int wraps_8 = (__m_count_5 / 1);
+				__m_carry_7 = (__m_carry_7 + wraps_8);
+				__m_count_5 = (__m_count_5 - (wraps_8 * 1));
+				carry_6 = 1;
+				
+			};
+			t_sample counter_622 = __m_count_5;
+			int counter_623 = carry_6;
+			int counter_624 = __m_carry_7;
+			t_sample s = (counter_622 * m_formant_4);
+			t_sample clipped = ((s <= 0) ? 0 : ((s >= 1) ? 1 : s));
+			t_sample scaled = ((clipped * 3.1415926535898) * 2);
+			t_sample expr_670 = ((1 - cos(scaled)) * 0.5);
+			__m_slide_9 = fixdenorm((__m_slide_9 + (((m_velocity_1 > __m_slide_9) ? iup_10 : idown_11) * (m_velocity_1 - __m_slide_9))));
+			t_sample slide_659 = __m_slide_9;
+			__m_cycle_12.freq(m_frequency_2);
+			t_sample cycle_629 = __m_cycle_12(__sinedata);
+			t_sample cycleindex_630 = __m_cycle_12.phase();
+			t_sample mul_627 = (expr_670 * cycle_629);
+			t_sample mul_638 = (mul_627 * slide_659);
+			t_sample out1 = mul_638;
 			// assign results to output buffer;
 			(*(__out1++)) = out1;
-			(*(__out2++)) = out2;
-
+			
 		};
 		return __exception;
-
+		
 	};
-	inline void set_freq(t_param _value) {
-		m_freq_1 = (_value < 32 ? 32 : (_value > 96 ? 96 : _value));
+	inline void set_velocity(t_param _value) {
+		m_velocity_1 = (_value < 0 ? 0 : (_value > 1 ? 1 : _value));
 	};
-	inline void set_q(t_param _value) {
-		m_q_2 = (_value < 0 ? 0 : (_value > 1 ? 1 : _value));
+	inline void set_frequency(t_param _value) {
+		m_frequency_2 = (_value < 1 ? 1 : (_value > 10000 ? 10000 : _value));
 	};
-	inline t_sample moogLadder_d_d_d(t_sample asig, t_sample cf, t_sample res) {
-		int i2v = 40000;
-		t_sample akfc = safediv(cf, (samplerate * 0.5));
-		t_sample akf = safediv(cf, samplerate);
-		t_sample fcr = ((((1.873 * safepow(akfc, 3)) + (0.4955 * safepow(akfc, 2))) - (0.649 * akfc)) + 0.9988);
-		t_sample acr = ((((-3.9364) * safepow(akfc, 2)) + (1.8409 * akfc)) + 0.9968);
-		t_sample twovg = (i2v * (1 - exp(((((-2) * 3.1415926535898) * fcr) * akf))));
-		t_sample y1 = (m_z_4 + (twovg * (tanh(safediv((asig - (((4 * res) * m_mf_10) * acr)), i2v)) - tanh(safediv(m_z_4, i2v)))));
-		m_z_4 = y1;
-		t_sample y2 = (m_z_5 + (twovg * (tanh(safediv(y1, i2v)) - tanh(safediv(m_z_5, i2v)))));
-		m_z_5 = y2;
-		t_sample y3 = (m_z_6 + (twovg * (tanh(safediv(y2, i2v)) - tanh(safediv(m_z_6, i2v)))));
-		m_z_6 = y3;
-		m_y_9 = (m_z_7 + (twovg * (tanh(safediv(y3, i2v)) - tanh(safediv(m_z_7, i2v)))));
-		m_z_7 = m_y_9;
-		m_mf_10 = ((m_y_9 + m_z_8) * 0.5);
-		m_z_8 = m_y_9;
-		return m_mf_10;
-
+	inline void set_period(t_param _value) {
+		m_period_3 = (_value < 1 ? 1 : (_value > 10000 ? 10000 : _value));
 	};
-
+	inline void set_formant(t_param _value) {
+		m_formant_4 = (_value < 1 ? 1 : (_value > 255 ? 255 : _value));
+	};
+	
 } State;
 
 
@@ -131,16 +138,16 @@ typedef struct State {
 /// Number of signal inputs and outputs
 
 int gen_kernel_numins = 1;
-int gen_kernel_numouts = 2;
+int gen_kernel_numouts = 1;
 
 int num_inputs() { return gen_kernel_numins; }
 int num_outputs() { return gen_kernel_numouts; }
-int num_params() { return 2; }
+int num_params() { return 4; }
 
 /// Assistive lables for the signal inputs and outputs
 
-const char *gen_kernel_innames[] = { "audio signal input" };
-const char *gen_kernel_outnames[] = { "moogLadder signal output L", "moogLadder signal output R" };
+const char *gen_kernel_innames[] = { "in1" };
+const char *gen_kernel_outnames[] = { "out1" };
 
 /// Invoke the signal process of a State object
 
@@ -161,9 +168,11 @@ void reset(CommonState *cself) {
 void setparameter(CommonState *cself, long index, t_param value, void *ref) {
 	State *self = (State *)cself;
 	switch (index) {
-		case 0: self->set_freq(value); break;
-		case 1: self->set_q(value); break;
-
+		case 0: self->set_formant(value); break;
+		case 1: self->set_frequency(value); break;
+		case 2: self->set_period(value); break;
+		case 3: self->set_velocity(value); break;
+		
 		default: break;
 	}
 }
@@ -173,9 +182,11 @@ void setparameter(CommonState *cself, long index, t_param value, void *ref) {
 void getparameter(CommonState *cself, long index, t_param *value) {
 	State *self = (State *)cself;
 	switch (index) {
-		case 0: *value = self->m_freq_1; break;
-		case 1: *value = self->m_q_2; break;
-
+		case 0: *value = self->m_formant_4; break;
+		case 1: *value = self->m_frequency_2; break;
+		case 2: *value = self->m_period_3; break;
+		case 3: *value = self->m_velocity_1; break;
+		
 		default: break;
 	}
 }
@@ -255,27 +266,55 @@ void *create(t_param sr, long vs) {
 	self->__commonstate.numouts = gen_kernel_numouts;
 	self->__commonstate.sr = sr;
 	self->__commonstate.vs = vs;
-	self->__commonstate.params = (ParamInfo *)genlib_sysmem_newptr(2 * sizeof(ParamInfo));
-	self->__commonstate.numparams = 2;
-	// initialize parameter 0 ("m_freq_1")
+	self->__commonstate.params = (ParamInfo *)genlib_sysmem_newptr(4 * sizeof(ParamInfo));
+	self->__commonstate.numparams = 4;
+	// initialize parameter 0 ("m_formant_4")
 	pi = self->__commonstate.params + 0;
-	pi->name = "freq";
+	pi->name = "formant";
 	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
-	pi->defaultvalue = self->m_freq_1;
+	pi->defaultvalue = self->m_formant_4;
 	pi->defaultref = 0;
 	pi->hasinputminmax = false;
 	pi->inputmin = 0;
 	pi->inputmax = 1;
 	pi->hasminmax = true;
-	pi->outputmin = 32;
-	pi->outputmax = 96;
+	pi->outputmin = 1;
+	pi->outputmax = 255;
 	pi->exp = 0;
 	pi->units = "";		// no units defined
-	// initialize parameter 1 ("m_q_2")
+	// initialize parameter 1 ("m_frequency_2")
 	pi = self->__commonstate.params + 1;
-	pi->name = "q";
+	pi->name = "frequency";
 	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
-	pi->defaultvalue = self->m_q_2;
+	pi->defaultvalue = self->m_frequency_2;
+	pi->defaultref = 0;
+	pi->hasinputminmax = false;
+	pi->inputmin = 0;
+	pi->inputmax = 1;
+	pi->hasminmax = true;
+	pi->outputmin = 1;
+	pi->outputmax = 10000;
+	pi->exp = 0;
+	pi->units = "";		// no units defined
+	// initialize parameter 2 ("m_period_3")
+	pi = self->__commonstate.params + 2;
+	pi->name = "period";
+	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
+	pi->defaultvalue = self->m_period_3;
+	pi->defaultref = 0;
+	pi->hasinputminmax = false;
+	pi->inputmin = 0;
+	pi->inputmax = 1;
+	pi->hasminmax = true;
+	pi->outputmin = 1;
+	pi->outputmax = 10000;
+	pi->exp = 0;
+	pi->units = "";		// no units defined
+	// initialize parameter 3 ("m_velocity_1")
+	pi = self->__commonstate.params + 3;
+	pi->name = "velocity";
+	pi->paramtype = GENLIB_PARAMTYPE_FLOAT;
+	pi->defaultvalue = self->m_velocity_1;
 	pi->defaultref = 0;
 	pi->hasinputminmax = false;
 	pi->inputmin = 0;
@@ -285,7 +324,7 @@ void *create(t_param sr, long vs) {
 	pi->outputmax = 1;
 	pi->exp = 0;
 	pi->units = "";		// no units defined
-
+	
 	return self;
 }
 
@@ -294,7 +333,7 @@ void *create(t_param sr, long vs) {
 void destroy(CommonState *cself) {
 	State *self = (State *)cself;
 	genlib_sysmem_freeptr(cself->params);
-
+		
 	delete self;
 }
 

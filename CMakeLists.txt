@@ -10,6 +10,7 @@ execute_process(
 
 SET(FLOAT_PRECISION "single" CACHE STRING "Floating-point precision (single or double)")
 SET(FASTMATH OFF CACHE BOOL "Use approximate math functions")
+SET(ENABLE_MIDI OFF CACHE BOOL "Enable MIDI")
 
 find_path(RTAUDIO_INCLUDES "RtAudio.h")
 if (RTAUDIO_INCLUDES)
@@ -63,9 +64,15 @@ elseif (${FLOAT_PRECISION} MATCHES "double")
 else()
 	message(FATAL_ERROR "Bad floating-point precision value. Aborting")
 endif()
+
 if (FASTMATH)
-message(STATUS "Using approximate math functions")
-add_definitions(-DGEN_USE_FASTMATH)
+	message(STATUS "Using approximate math functions")
+	add_definitions(-DGEN_USE_FASTMATH)
+endif()
+
+if (ENABLE_MIDI)
+	message(STATUS "Enabling MIDI")
+	add_definitions(-DENABLE_MIDI)
 endif()
 
 if (NOT APPLE)
@@ -144,3 +151,4 @@ endif()
 
 UNSET(FLOAT_PRECISION CACHE)
 UNSET(FASTMATH CACHE)
+UNSET(ENABLE_MIDI CACHE)
