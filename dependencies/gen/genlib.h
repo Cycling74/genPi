@@ -112,11 +112,13 @@ extern "C" {
 	extern double floor(double);
 	extern double trunc(double);
 	extern double round(double);
+	extern int abs(int);
 
 	extern char *strcpy(char *, const char *);
+#else
+#	include <stdlib.h> // abs
 #endif // MSP_ON_CLANG
 
-	extern int abs(int);
 
 #if defined(GENLIB_USE_ARMMATH) // ARM embedded support
 #	include "arm_math.h"
