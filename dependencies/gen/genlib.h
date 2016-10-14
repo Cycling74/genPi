@@ -134,7 +134,7 @@ extern "C" {
 #endif // GENLIB_USE_ARMMATH
 
 #if defined(GENLIB_USE_FASTMATH)
-#	include "math.h"
+#	include <math.h>
 #	define tan(x)		fastertanfull(x)
 #	define exp(x)		fasterexp(x)
 #	define log2(x)		fasterlog2(x)
