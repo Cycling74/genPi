@@ -1,6 +1,6 @@
-#include "gen_export.h"
+#include "gen_exported.h"
 
-namespace gen_export {
+namespace gen_exported {
 
 /*******************************************************************************************************************
 Cycling '74 License for Max-Generated Code for Export
@@ -299,4 +299,4 @@ void destroy(CommonState *cself) {
 }
 
 
-} // gen_export::
+} // gen_exported::

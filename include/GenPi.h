@@ -25,7 +25,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define _GenPi_h_
 
 #include <cstring>
-#include "gen_export.h"
+#include "gen_exported.h"
 #include "Host.h"
 #include "Settings.h"
 #include "Globals.h"

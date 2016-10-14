@@ -24,7 +24,7 @@
 #ifndef _Host_h_
 #define _Host_h_
 
-#include "gen_export.h"
+#include "gen_exported.h"
 #include "AudioMidiHost.h"
 #include "ParameterHost.h"
 

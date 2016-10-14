@@ -9,7 +9,7 @@ The code that Max generates automatically and that end users are capable of expo
 The Software is licensed to Licensee only for non-commercial use. Users who wish to make commercial use of the
   Software must contact the copyright owner to determine if a license for commercial use is available, and the
   terms and conditions for same, which may include fees or royalties. For commercial use, please send inquiries
-  to licensing@cycling74.com.  The determination of whether a use is commercial use or non-commercial use is based
+  to licensing (at) cycling74.com.  The determination of whether a use is commercial use or non-commercial use is based
   upon the use, not the user. The Software may be used by individuals, institutions, governments, corporations, or
   other business whether for-profit or non-profit so long as the use itself is not a commercialization of the
   materials or a use that generates or is intended to generate income, revenue, sales or profit.
@@ -21,38 +21,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   DEALINGS IN THE SOFTWARE.
 *******************************************************************************************************************/
 
-#ifndef _Processor_h_
-#define _Processor_h_
 
-#include "GenPi.h"
-#include "Object.h"
+#include "genlib.h"
+#include "genlib_exportfunctions.h"
+#include "genlib_ops.h"
 
-namespace GenPi {
+namespace gen_exported {
 
-	class Processor {
+int num_inputs();
+int num_outputs();
+int num_params();
+int perform(CommonState *cself, t_sample **ins, long numins, t_sample **outs, long numouts, long n);
+void reset(CommonState *cself);
+void setparameter(CommonState *cself, long index, t_param value, void *ref);
+void getparameter(CommonState *cself, long index, t_param *value);
+const char *getparametername(CommonState *cself, long index);
+t_param getparametermin(CommonState *cself, long index);
+t_param getparametermax(CommonState *cself, long index);
+char getparameterhasminmax(CommonState *cself, long index);
+const char *getparameterunits(CommonState *cself, long index);
+size_t getstatesize(CommonState *cself);
+short getstate(CommonState *cself, char *state);
+short setstate(CommonState *cself, const char *state);
+void *create(t_param sr, long vs);
+void destroy(CommonState *cself);
 
-	public:
-		Processor() {}
-		~Processor() {}
-
-		void prepare(double sampleRate, size_t blockSize) {
-			;
-		}
-
-		void process(t_sample** audioInputs, size_t numInputs,
-						t_sample** audioOutputs, size_t numOutputs,
-						size_t sampleFrames)
-		{
-			// assuming non-interleaved sample buffers
-			int obIns = getGenObject().getNumInputChannels();
-			int obOuts = getGenObject().getNumOutputChannels();
-			getGenObject().process(obIns ? audioInputs : nullptr, obIns ? numInputs : 0,
-								 obOuts ? audioOutputs : nullptr, obOuts ? numOutputs : 0,
-								 sampleFrames);
-		}
-
-	};
-
-}
-
-#endif
+} // gen_exported::

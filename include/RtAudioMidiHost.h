@@ -259,7 +259,7 @@ namespace GenPi {
 				}
 			}
 
-			rth->m_processor.perform((t_sample**)ip, rth->m_info.numChannels,
+			rth->m_processor.process((t_sample**)ip, rth->m_info.numChannels,
 									 (t_sample**)op, rth->m_info.numChannels,
 									 nFrames);
 

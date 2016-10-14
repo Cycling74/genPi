@@ -25,7 +25,9 @@
 #define _Object_h_
 
 #include "Globals.h"
-#include "gen_export.h"
+#include "gen_exported.h"
+
+using namespace gen_exported;
 
 namespace GenPi {
 
@@ -38,22 +40,22 @@ namespace GenPi {
 			return *pInstance;
 		}
 
-		int getNumParameters() { return gen_export::num_params(); }
-		int getNumInputChannels() { return gen_export::num_inputs(); }
-		int getNumOutputChannels() { return gen_export::num_outputs(); }
+		int getNumParameters() { return num_params(); }
+		int getNumInputChannels() { return num_inputs(); }
+		int getNumOutputChannels() { return num_outputs(); }
 
 		const char* getParameterName(long index) {
 			if (m_genObject && index >= 0 && index < getNumParameters()) {
-				return gen_export::getparametername(m_genObject, index);
+				return getparametername(m_genObject, index);
 			}
 			return "";
 		}
 
 		int getParameterMinMax(long index, t_param* min, t_param* max) {
 			if (m_genObject && index >= 0 && index < getNumParameters()) {
-				if (gen_export::getparameterhasminmax(m_genObject, index)) {
-					*min = gen_export::getparametermin(m_genObject, index);
-					*max = gen_export::getparametermax(m_genObject, index);
+				if (getparameterhasminmax(m_genObject, index)) {
+					*min = getparametermin(m_genObject, index);
+					*max = getparametermax(m_genObject, index);
 					return 0;
 				}
 			}
@@ -63,7 +65,7 @@ namespace GenPi {
 		t_param getParameterValue(long index) {
 			if (m_genObject && index >= 0 && index < getNumParameters()) {
 				t_param value;
-				gen_export::getparameter(m_genObject, index, &value);
+				getparameter(m_genObject, index, &value);
 				return value;
 			}
 			return -1;
@@ -71,13 +73,13 @@ namespace GenPi {
 
 		void setParameterValue(long index, t_param value) {
 			if (m_genObject && index >= 0 && index < getNumParameters()) {
-				gen_export::setparameter(m_genObject, index, value, nullptr);
+				setparameter(m_genObject, index, value, nullptr);
 			}
 		}
 
-		void perform(t_sample** ins, long numIns, t_sample** outs, long numOuts, long numFrames) {
+		void process(t_sample** ins, long numIns, t_sample** outs, long numOuts, long numFrames) {
 			if (m_genObject) {
-				gen_export::perform(m_genObject, ins, numIns, outs, numOuts, numFrames);
+				perform(m_genObject, ins, numIns, outs, numOuts, numFrames);
 			}
 		}
 
@@ -86,7 +88,7 @@ namespace GenPi {
 		static Object *pInstance;
 
 		Object() {
-			m_genObject = (CommonState*)gen_export::create(Globals::sampleRate, Globals::blockSize);
+			m_genObject = (CommonState*)create(Globals::sampleRate, Globals::blockSize);
 		}
 
 		Object(const Object& rs) {
@@ -102,7 +104,7 @@ namespace GenPi {
 
 		~Object() {
 			if (m_genObject) {
-				gen_export::destroy(m_genObject);
+				destroy(m_genObject);
 			}
 		}
 
