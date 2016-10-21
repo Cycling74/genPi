@@ -46,12 +46,11 @@ namespace GenPi {
 	public:
 
 		HardwareEncoder(
-						int paramIndex = 0, // we want to provide a name-based automapping, as well
+						int paramIndex = -1, // we want to provide a name-based automapping, as well
 						int pin1 = 3, // pins are wiringPi-numbered
 						int pin2 = 4)
 		: mSampleThread(&HardwareEncoder::sample, this)
 		, mEncoder(nullptr)
-		, mRunning(true)
 		, mCurrentValue(INT_MAX)
 		, mParameterIndex(paramIndex)
 		{
@@ -61,6 +60,9 @@ namespace GenPi {
 			// pins on the fly, and is more than I want to deal with for a proof of concept
 			// implementation right now. http://wiringpi.com/reference/setup/
 			mEncoder = setupencoder(pin1, pin2);
+			if (paramIndex >= 0) {
+				mRunning = true;
+			}
 		}
 
 
@@ -68,6 +70,19 @@ namespace GenPi {
 			mRunning = false;
 			if (mSampleThread.joinable())
 				mSampleThread.join();
+		}
+
+		void setParameter(int index) {
+			if (index >= 0) {
+				if (index < getGenObject().getNumParameters()) {
+					mParamIndex = index;
+					mRunning = true;
+				} // else no change
+			}
+			else {
+				mParamIndex = -1;
+				mRunning = false;
+			}
 		}
 
 	private:
@@ -129,8 +144,8 @@ namespace GenPi {
 
 	public:
 		HardwareEncoder(int paramIndex = 0,
-						int pin1 = 4,
-						int pin2 = 5)
+						int pin1 = 3,
+						int pin2 = 4)
 		{
 		}
 
