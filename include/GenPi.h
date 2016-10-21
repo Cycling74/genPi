@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "Settings.h"
 #include "Globals.h"
 #include "HardwareEncoder.h"
+#include <algorithm>
 
 namespace GenPi {
 
@@ -41,11 +42,17 @@ namespace GenPi {
 
 	public:
 
-		Runner(int argc, const char* argv[]) {
+		Runner(int argc, const char* argv[])
+		: m_encoder(nullptr) {
 			m_workingPath = getWorkingPath(argc, argv);
+			m_encoder = getHardware();
 		}
 
-		~Runner() {}
+		~Runner() {
+			if (m_encoder) {
+				delete m_encoder;
+			}
+		}
 
 		int setup() {
 			setupSettings();
@@ -264,7 +271,7 @@ namespace GenPi {
 			if (!m_settings.parseText(content)) return;
 
 			std::string value;
-			if (!m_settings.get("AudioInput", value)) {
+			if (!m_settings.get("AudioInput", &value)) {
 				std::vector<std::string> devices = m_host.getAudioInDevices();
 				for (int i = 0, size = devices.size(); i < size; i++) {
 					if (devices[i] == value) {
@@ -274,7 +281,7 @@ namespace GenPi {
 					}
 				}
 			}
-			if (!m_settings.get("AudioOutput", value)) {
+			if (!m_settings.get("AudioOutput", &value)) {
 				std::vector<std::string> devices = m_host.getAudioOutDevices();
 				for (int i = 0, size = devices.size(); i < size; i++) {
 					if (devices[i] == value) {
@@ -286,7 +293,7 @@ namespace GenPi {
 			}
 
 #ifdef ENABLE_MIDI
-			if (!m_settings.get("MidiInput", value)) {
+			if (!m_settings.get("MidiInput", &value)) {
 				std::vector<std::string> ports = m_host.getMidiInPorts();
 				for (int i = 0, size = ports.size(); i < size; i++) {
 					if (ports[i] == value) {
@@ -296,7 +303,7 @@ namespace GenPi {
 					}
 				}
 			}
-			if (!m_settings.get("MidiOutput", value)) {
+			if (!m_settings.get("MidiOutput", &value)) {
 				std::vector<std::string> ports = m_host.getMidiOutPorts();
 				for (int i = 0, size = ports.size(); i < size; i++) {
 					if (ports[i] == value) {
@@ -315,10 +322,74 @@ namespace GenPi {
 			ofstr << m_settings;
 		}
 
+		enum mappingType {
+			LINEAR,
+			EXPONENTIAL,
+			LOG,
+			LUT, // ?
+		};
+
+		struct interfaceMapping {
+			std::string src; // interface element name (e.g. hardware device 'encoder1')
+			std::string dst; // parameter target, this will need to be unique for now, or do we want to have a "mix" stage for this stuff?
+			mappingType type;
+			//std::string expr; // expression-based rule (e.g. if $dial1 == 0 then $frequency else $q)
+		};
+
+		// this will retrieve exactly one hardware encoder, could be modified
+		HardwareEncoder* getHardware() {
+			std::string filepath(m_workingPath + "hardware.json");
+			std::ifstream file(filepath);
+			std::string content(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()) );
+			std::vector<std::string> paramNames = m_host.getParameters();
+
+			if (!m_settings.parseText(content)) return nullptr;
+
+			Settings devices;
+			Settings mappings;
+			if (!m_settings.get("devices", &devices) && !m_settings.get("mappings", &mappings)) {
+				std::vector<std::string> deviceKeys = devices.getKeys();
+				std::vector<std::string> mapKeys = mappings.getKeys();
+
+				for (auto it = mapKeys.begin(); it != mapKeys.end(); it++) {
+					std::string mapName = *it;
+					Settings mapSettings;
+					if (!mappings.get(mapName, &mapSettings)) {
+						std::string mapSrc, mapDst;
+						if (!mapSettings.get("src", &mapSrc) && !mapSettings.get("dst", &mapDst)) {
+							auto deviceFound = std::find(deviceKeys.begin(), deviceKeys.end(), mapSrc);
+							auto paramFound = std::find(paramNames.begin(), paramNames.end(), mapDst);
+
+							if (deviceFound != deviceKeys.end() && paramFound != paramNames.end()) {
+								Settings deviceSettings;
+								if (!devices.get(mapSrc, &deviceSettings)) {
+									std::string deviceType;
+									if (!deviceSettings.get("type", &deviceType)) {
+										if (deviceType == "encoder") {
+											int pin1, pin2;
+											if (!deviceSettings.get("pin1", &pin1) && !deviceSettings.get("pin2", &pin2)) {
+												if (!m_encoder) {
+													return new HardwareEncoder(paramFound - paramNames.begin(), pin1, pin2);
+												}
+											}
+										}
+										else {
+											; // encoders are the only kind of hardware we know about right now
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			return nullptr;
+		}
+
 		Host<C> m_host;
 		Settings m_settings;
 		std::string m_workingPath;
-		HardwareEncoder m_encoder;
+		HardwareEncoder* m_encoder;
 
 	};
 
