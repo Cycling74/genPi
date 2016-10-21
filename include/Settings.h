@@ -35,55 +35,51 @@ namespace GenPi {
 		Settings() {}
 		~Settings() {}
 
-		void set(std::string key, std::string value) { m_state << key << value; }
-		void set(std::string key, int value) { m_state << key << value; }
-		void set(std::string key, double value) { m_state << key << value; }
-		void set(std::string key, bool value) { m_state << key << value; }
+		template <typename T>
+		void set(std::string key, const T& value) { m_state << key << value; }
+		// override for the Settings case
+		void set(std::string key, const Settings& value) { m_state << key << value.m_state; }
 
 		bool parseText(std::string& text) { return m_state.parse(text); }
 		std::string getText() const { return m_state.json(); }
 
-		int get(std::string key, std::string& value) const {
-			if (m_state.has<jsonxx::String>(key)) {
-				value = m_state.get<jsonxx::String>(key);
-				return 0;
+		int get(std::string key, std::string* value) const { return get<std::string, jsonxx::String>(key, value); }
+		int get(std::string key, int* value) const { return get<int, jsonxx::Number>(key, value); }
+		int get(std::string key, double* value) const { return get<double, jsonxx::Number>(key, value); }
+		int get(std::string key, bool* value) const { return get<bool, jsonxx::Boolean>(key, value); }
+		int get(std::string key, Settings* value) const { return get<Settings, jsonxx::Object>(key, value); }
+
+		std::vector<std::string> getKeys() {
+			std::vector<std::string> keys;
+			jsonxx::Object::container container = m_state.kv_map();
+			for (auto it = container.begin(); it != container.end(); it++) {
+				keys.push_back(it->first);
 			}
-			return -1;
+			return keys;
 		}
 
-		int get(std::string key, int& value) const {
-			if (m_state.has<jsonxx::Number>(key)) {
-				value = (int)m_state.get<jsonxx::Number>(key);
-				return 0;
-			}
-			return -1;
-		}
-
-		int get(std::string key, double& value) const {
-			if (m_state.has<jsonxx::Number>(key)) {
-				value = (double)m_state.get<jsonxx::Number>(key);
-				return 0;
-			}
-			return -1;
-		}
-
-		int get(std::string key, bool& value) const {
-			if (m_state.has<jsonxx::Boolean>(key)) {
-				value = m_state.get<jsonxx::Boolean>(key);
-				return 0;
-			}
-			return -1;
-		}
-
-		bool empty() {
-			return m_state.empty();
-		}
+		bool empty() { return m_state.empty(); }
 
 		// currently not necessary, but might be at some point
 		friend std::ostream& operator<<(std::ostream& os, const Settings& obj);
 		friend std::istream& operator>>(std::istream& is, Settings& obj);
 
 	private:
+
+		Settings(jsonxx::Object& o) : m_state(o) {}
+		Settings& operator=(const jsonxx::Object& o) {
+			m_state = o;
+			return *this;
+		}
+
+		template <typename T, typename U>
+		int get(std::string key, T* value) const {
+			if (m_state.has<U>(key)) {
+				*value = (U)m_state.get<U>(key);
+				return 0;
+			}
+			return -1;
+		}
 
 		jsonxx::Object m_state;
 

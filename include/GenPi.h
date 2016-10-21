@@ -260,7 +260,7 @@ namespace GenPi {
 			if (!m_settings.parseText(content)) return;
 
 			std::string value;
-			if (!m_settings.get("AudioInput", value)) {
+			if (!m_settings.get("AudioInput", &value)) {
 				std::vector<std::string> devices = m_host.getAudioInDevices();
 				for (int i = 0, size = devices.size(); i < size; i++) {
 					if (devices[i] == value) {
@@ -270,7 +270,7 @@ namespace GenPi {
 					}
 				}
 			}
-			if (!m_settings.get("AudioOutput", value)) {
+			if (!m_settings.get("AudioOutput", &value)) {
 				std::vector<std::string> devices = m_host.getAudioOutDevices();
 				for (int i = 0, size = devices.size(); i < size; i++) {
 					if (devices[i] == value) {
@@ -281,7 +281,7 @@ namespace GenPi {
 				}
 			}
             /*
-			if (!m_settings.get("MidiInput", value)) {
+			if (!m_settings.get("MidiInput", &value)) {
 				std::vector<std::string> ports = m_host.getMidiInPorts();
 				for (int i = 0, size = ports.size(); i < size; i++) {
 					if (ports[i] == value) {
@@ -291,7 +291,7 @@ namespace GenPi {
 					}
 				}
 			}
-			if (!m_settings.get("MidiOutput", value)) {
+			if (!m_settings.get("MidiOutput", &value)) {
 				std::vector<std::string> ports = m_host.getMidiOutPorts();
 				for (int i = 0, size = ports.size(); i < size; i++) {
 					if (ports[i] == value) {
