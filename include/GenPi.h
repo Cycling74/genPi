@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "Settings.h"
 #include "Globals.h"
 #include "HardwareEncoder.h"
+#include <algorithm>
 
 namespace GenPi {
 
@@ -41,7 +42,8 @@ namespace GenPi {
 
 	public:
 
-		Runner(int argc, const char* argv[]) {
+		Runner(int argc, const char* argv[])
+		: m_encoder(nullptr) {
 			m_workingPath = getWorkingPath(argc, argv);
 			m_encoder = getHardware();
 		}

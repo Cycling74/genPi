@@ -75,12 +75,12 @@ namespace GenPi {
 		void setParameter(int index) {
 			if (index >= 0) {
 				if (index < getGenObject().getNumParameters()) {
-					mParamIndex = index;
+					mParameterIndex = index;
 					mRunning = true;
 				} // else no change
 			}
 			else {
-				mParamIndex = -1;
+				mParameterIndex = -1;
 				mRunning = false;
 			}
 		}
