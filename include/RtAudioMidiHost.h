@@ -319,7 +319,9 @@ namespace GenPi {
 		{
 			RtAudioMidiHost* rth = (RtAudioMidiHost *)userData;
 
+#ifdef ENABLE_MIDI
 			rth->getPendingMidi(rth);
+#endif
 
 			t_sample* ip[rth->m_info.numChannels];
 			t_sample* op[rth->m_info.numChannels];
@@ -354,7 +356,9 @@ namespace GenPi {
 				}
 			}
 
+#ifdef ENABLE_MIDI
 			rth->processMidiOutput();
+#endif
 
 			return 0; // keep going
 		}
@@ -370,11 +374,9 @@ namespace GenPi {
 			return -1;
 		}
 
+#ifdef ENABLE_MIDI
 		void getPendingMidi(RtAudioMidiHost* rth) {
-			int freqIndex = getParameterIndexForName("frequency");
-			int veloIndex = getParameterIndexForName("velocity");
-
-			if (m_midiin && freqIndex > 0) {
+			if (m_midiin && m_hasMidiMap) {
 				while (1) {
 					std::vector<unsigned char> message;
 					double timeStamp = 0;
@@ -386,9 +388,32 @@ namespace GenPi {
 						return;
 					}
 					if (int bytes = message.size()) {
-						// TODO: find out the current time?
+						if (bytes == 3 && message[0] & 0xB0) { // controller change
+							int cntlNum = message[1] & 0x7F;
+							int cntlVal = message[2] & 0x7F;
 
-						// example
+							std::string mapName;
+							mapName = 'A' + (cntlNum - 20); // start with cntl 20 = A and onward and upward
+
+							auto found = m_midimap.find(mapName);
+							if (found != m_midimap.end()) {
+								int paramNum = found->second;
+								t_param min, max;
+								t_param val;
+								if (!getGenObject().getParameterMinMax(paramNum, &min, &max)) {
+									val = (cntlVal / 127.) * (max - min) + min;
+								}
+								else {
+									val = (cntlVal / 127.); // assume 0-1
+								}
+								getGenObject().setParameterValue(paramNum, val);
+							}
+						}
+
+						// example for note message
+						/*
+						 int freqIndex; // freq param
+						 int veloIndex; // velo param
 						if (bytes == 3 && message[0] & 0x80) { // note on or off
 							int midiNote = message[1] & 0x7F;
 							int midiVelo = message[2] & 0x7F;
@@ -404,6 +429,7 @@ namespace GenPi {
 								getGenObject().setParameterValue(veloIndex, velo);
 							}
 						}
+						*/
 #if 0
 						std::cout << "Got MIDI Input:" << std::endl;
 						for (int i = 0; i < bytes; i++) {
@@ -423,6 +449,7 @@ namespace GenPi {
 
 			}
 		}
+#endif
 
 		bool init() {
 			RtAudio::Api api = RtAudio::UNSPECIFIED;
@@ -437,6 +464,7 @@ namespace GenPi {
 #if ENABLE_MIDI
 			initMidiIn();
 			initMidiOut();
+			initMidiMap();
 #endif
 			return true;
 		}
@@ -493,6 +521,27 @@ namespace GenPi {
 			return true;
 		}
 
+#ifdef ENABLE_MIDI
+		bool initMidiMap() {
+			m_midimap["A"] = getParameterIndexForName("A");
+			m_midimap["B"] = getParameterIndexForName("B");
+			m_midimap["C"] = getParameterIndexForName("C");
+			m_midimap["D"] = getParameterIndexForName("D");
+			m_midimap["E"] = getParameterIndexForName("E");
+			m_midimap["F"] = getParameterIndexForName("F");
+			m_midimap["G"] = getParameterIndexForName("G");
+			m_midimap["H"] = getParameterIndexForName("H");
+			m_hasMidiMap = false;
+			for (auto it = m_midimap.begin(); it != m_midimap.end(); it++) {
+				if (it->second > 0) {
+					m_hasMidiMap = true;
+					break;
+				}
+			}
+			return true;
+		}
+#endif
+
 		std::vector<std::string> getAudioDevices(AudioDeviceType way) const {
 			std::vector<std::string> devices;
 			if (m_audio) {
@@ -524,6 +573,10 @@ namespace GenPi {
 		t_sample*       m_ip;
 		t_sample*       m_op;
 		RtAudioMidiInfo m_info;
+#ifdef ENABLE_MIDI
+		std::map<std::string, int> m_midimap;
+		bool			m_hasMidiMap;
+#endif
 
 	};
 
