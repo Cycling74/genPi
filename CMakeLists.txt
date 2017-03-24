@@ -10,7 +10,7 @@ execute_process(
 
 SET(FLOAT_PRECISION "single" CACHE STRING "Floating-point precision (single or double)")
 SET(FASTMATH OFF CACHE BOOL "Use approximate math functions")
-SET(ENABLE_MIDI OFF CACHE BOOL "Enable MIDI")
+SET(ENABLE_MIDI ON CACHE BOOL "Enable MIDI")
 
 find_path(RTAUDIO_INCLUDES "RtAudio.h")
 if (RTAUDIO_INCLUDES)

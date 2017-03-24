@@ -322,20 +322,6 @@ namespace GenPi {
 			ofstr << m_settings;
 		}
 
-		enum mappingType {
-			LINEAR,
-			EXPONENTIAL,
-			LOG,
-			LUT, // ?
-		};
-
-		struct interfaceMapping {
-			std::string src; // interface element name (e.g. hardware device 'encoder1')
-			std::string dst; // parameter target, this will need to be unique for now, or do we want to have a "mix" stage for this stuff?
-			mappingType type;
-			//std::string expr; // expression-based rule (e.g. if $dial1 == 0 then $frequency else $q)
-		};
-
 		// this will retrieve exactly one hardware encoder, could be modified
 		HardwareEncoder* getHardware() {
 			std::string filepath(m_workingPath + "hardware.json");
