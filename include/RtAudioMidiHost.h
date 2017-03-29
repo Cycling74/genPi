@@ -376,7 +376,7 @@ namespace GenPi {
 
 #ifdef ENABLE_MIDI
 		void getPendingMidi(RtAudioMidiHost* rth) {
-			if (m_midiin && m_hasMidiMap) {
+			if (m_midiin) {
 				while (1) {
 					std::vector<unsigned char> message;
 					double timeStamp = 0;
@@ -387,6 +387,9 @@ namespace GenPi {
 					catch(RtMidiError &e) {
 						return;
 					}
+
+					if (!m_hasMidiMap) continue; // drain the queue, but don't process
+
 					if (int bytes = message.size()) {
 						if (bytes == 3 && message[0] & 0xB0) { // controller change
 							int cntlNum = message[1] & 0x7F;
