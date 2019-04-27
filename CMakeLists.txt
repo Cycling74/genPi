@@ -11,7 +11,7 @@ execute_process(
 SET(FLOAT_PRECISION "single" CACHE STRING "Floating-point precision (single or double)")
 SET(FASTMATH OFF CACHE BOOL "Use approximate math functions")
 
-find_path(RTAUDIO_INCLUDES "RtAudio.h")
+find_path(RTAUDIO_INCLUDES "RtAudio.h" HINTS ${CMAKE_FIND_ROOT_PATH}/usr/include/rtaudio ${CMAKE_FIND_ROOT_PATH}/usr/local/include/rtaudio)
 if (RTAUDIO_INCLUDES)
 	file(STRINGS "${RTAUDIO_INCLUDES}/RtAudio.h" RTAUDIO_VERSION_LINE REGEX RTAUDIO_VERSION)
 	string(REGEX REPLACE "^.*\"(.*)\".*$" "\\1" RTAUDIO_VERSION  "${RTAUDIO_VERSION_LINE}")
@@ -22,7 +22,7 @@ if (RTAUDIO_INCLUDES)
 	endif()
 endif()
 
-find_path(RTMIDI_INCLUDES "RtMidi.h")
+find_path(RTMIDI_INCLUDES "RtMidi.h" HINTS ${CMAKE_FIND_ROOT_PATH}/usr/include/rtmidi ${CMAKE_FIND_ROOT_PATH}/usr/local/include/rtmidi)
 if (RTMIDI_INCLUDES)
 	file(STRINGS "${RTMIDI_INCLUDES}/RtMidi.h" RTMIDI_VERSION_LINE REGEX RTMIDI_VERSION)
 	string(REGEX REPLACE "^.*\"(.*)\".*$" "\\1" RTMIDI_VERSION  "${RTMIDI_VERSION_LINE}")
